@@ -33,7 +33,7 @@ namespace Merchello.Providers.Payment.Stripe
 
             //GatewayProviderService.Saving += GatewayProviderServiceOnSaving;
 
-            //StripePaymentController.Processed += StripeControllerProcessed;
+            StripePaymentController.Processed += StripeControllerProcessed;
         }
 
         /// <summary>
@@ -65,15 +65,15 @@ namespace Merchello.Providers.Payment.Stripe
         /// </param>
         private void StripeControllerProcessed(StripePaymentController sender, PaymentAttemptEventArgs<IPaymentResult> e)
         {
-        //    var attempt = e.Entity;
-        //    if (attempt.Payment.Success)
-        //    {
-        //        var email = attempt.Invoice.BillToEmail;
+            var attempt = e.Entity;
+            if (attempt.Payment.Success)
+            {
+                var email = attempt.Invoice.BillToEmail;
 
-        //        LogHelper.Info<UmbracoEventHandler>(string.Format("Raising notification trigger for order no. {0}", attempt.Invoice.BillToEmail));
+                LogHelper.Info<StripeApplicationEventListener>(string.Format("Raising notification trigger for order no. {0}", attempt.Invoice.BillToEmail));
 
-        //        Notification.Trigger("OrderConfirmation", attempt, new[] { attempt.Invoice.BillToEmail }, Topic.Notifications);
-        //    }
+                Notification.Trigger("OrderConfirmation", attempt, new[] { attempt.Invoice.BillToEmail }, Topic.Notifications);
+            }
         }
     }
 }

@@ -38,7 +38,9 @@ namespace Merchello.Providers.Payment.Stripe.Controllers
         {
             try
             {
-                var paymentMethod = CheckoutManager.Payment.GetPaymentMethod();
+                var provider = GatewayContext.Payment.GetProviderByKey(Constants.Stripe.GatewayProviderSettingsKey);
+                //var paymentMethod = CheckoutManager.Payment.GetPaymentMethod();
+                var paymentMethod = this.CheckoutManager.Payment.GetPaymentGatewayMethods().FirstOrDefault(x => x.PaymentMethod.ProviderKey == provider.Key).PaymentMethod;
                 if (paymentMethod == null)
                 {
                     var ex = new NullReferenceException("PaymentMethod was null");
@@ -48,7 +50,7 @@ namespace Merchello.Providers.Payment.Stripe.Controllers
                 var args = new ProcessorArgumentCollection();
                 args.SetTokenId(model.Token);
                 args.SetCustomerName(model.Name);
-                //args.SetCustomerEmail(model.Email);
+                args.SetCustomerEmail(model.Email);
 
                 // We can now capture the payment
                 // This will actually make a few more API calls back to Stripe to get required transaction
@@ -60,6 +62,7 @@ namespace Merchello.Providers.Payment.Stripe.Controllers
 
                 var resultModel = CheckoutPaymentModelFactory.Create(CurrentCustomer, paymentMethod, attempt);
                 resultModel.SuccessRedirectUrl = model.SuccessRedirectUrl;
+                string invoiceId = attempt.Invoice.Key.ToString().EncryptWithMachineKey();
 
                 if (attempt.Payment.Success)
                 {
@@ -73,7 +76,7 @@ namespace Merchello.Providers.Payment.Stripe.Controllers
                     EnsureDeleteInvoiceOnCancel(invoiceKey, paymentKey);
                 }
 
-                return HandlePaymentSuccess(resultModel);
+                return HandlePaymentSuccess(resultModel, invoiceId);
             }
             catch (Exception ex)
             {
@@ -81,11 +84,17 @@ namespace Merchello.Providers.Payment.Stripe.Controllers
             }
         }
 
-        protected override ActionResult HandlePaymentSuccess(StripePaymentModel model)
+        protected ActionResult HandlePaymentSuccess(StripePaymentModel model,string invoiceId)
         {
             return model.ViewData.Success && !model.SuccessRedirectUrl.IsNullOrWhiteSpace() ?
-                Redirect(model.SuccessRedirectUrl) :
-                base.HandlePaymentSuccess(model);
+                  Redirect(string.Format("{0}?inv={1}", model.SuccessRedirectUrl, invoiceId)): base.HandlePaymentSuccess(model);
+
+        }
+        protected override ActionResult HandlePaymentException(StripePaymentModel model, Exception ex)
+        {
+            TempData.Add("PaymentFailed",ex.Message);
+            return RedirectToCurrentUmbracoPage();
+
         }
 
         /// <summary>
@@ -100,15 +109,16 @@ namespace Merchello.Providers.Payment.Stripe.Controllers
             var provider = GatewayContext.Payment.GetProviderByKey(Constants.Stripe.GatewayProviderSettingsKey);
             var settings = provider.ExtendedData.GetStripeProviderSettings();
 
-            var paymentMethod = this.CheckoutManager.Payment.GetPaymentMethod();
+            //var paymentMethod = this.CheckoutManager.Payment.GetPaymentMethod();
+            var paymentMethod = this.CheckoutManager.Payment.GetPaymentGatewayMethods().FirstOrDefault(x => x.PaymentMethod.ProviderKey == provider.Key).PaymentMethod;
             var billing = this.CheckoutManager.Customer.GetBillToAddress();
             if (paymentMethod == null) return this.InvalidCheckoutStagePartial();
 
             var model = this.CheckoutPaymentModelFactory.Create(CurrentCustomer, paymentMethod);
             model.PublishableKey = settings.PublishableKey;
             model.SuccessRedirectUrl = settings.SuccessRedirectUrl;
-            model.Name = billing.Name;
-            //model.Email = billing.Email;
+            //model.Name = billing.Name;
+            model.Email = billing.Email;
 
             return view.IsNullOrWhiteSpace() ? this.PartialView(model) : this.PartialView(view, model);
         }

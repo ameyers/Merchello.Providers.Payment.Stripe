@@ -33,9 +33,9 @@ namespace Merchello.Providers.Payment.Stripe.Models
         /// <summary>
         /// Gets or sets the customer's email address.
         /// </summary>
-        //[Required]
-        //[EmailAddress]
-        //public string Email { get; set; }
+        [Required]
+        [EmailAddress]
+        public string Email { get; set; }
 
         /// <summary>
         /// Gets or sets the success redirect url.

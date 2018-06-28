@@ -162,7 +162,7 @@ namespace Merchello.Providers.Payment.Stripe.Provider
                     {
                         Amount = ConvertAmount(invoice, amount),
                         Currency = invoice.CurrencyCode().ToLower(),
-                        Description = "Valley Store Order",
+                        Description = "AEHS Store Order",
                         CustomerId = customer.Id,
                         Capture = option == TransactionOption.AuthorizeAndCapture,
                     };
