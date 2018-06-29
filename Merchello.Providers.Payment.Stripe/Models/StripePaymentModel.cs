@@ -27,7 +27,7 @@ namespace Merchello.Providers.Payment.Stripe.Models
         /// <summary>
         /// Gets or sets the customer's name.
         /// </summary>
-        [Required]
+        [Required(ErrorMessage = "Please enter the name as it appears on the card")]
         public string Name { get; set; }
 
         /// <summary>

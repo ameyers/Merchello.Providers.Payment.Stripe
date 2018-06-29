@@ -9,6 +9,7 @@ using Merchello.Plugin.Payments.Stripe;
 using Umbraco.Core;
 using Umbraco.Core.Logging;
 using Merchello.Providers.Payment.Stripe.Services;
+using System.Collections.Generic;
 
 namespace Merchello.Providers.Payment.Stripe.Provider
 {
@@ -145,8 +146,9 @@ namespace Merchello.Providers.Payment.Stripe.Provider
                 {
                     Email = email,
                     Description = name,
-                    SourceToken = token
-                };
+                    SourceToken = token,
+            };
+                
 
                 var customerService = new StripeCustomerService();
                 customer = customerService.Create(customerOptions);
@@ -157,6 +159,16 @@ namespace Merchello.Providers.Payment.Stripe.Provider
 
                 if (response != null)
                 {
+                    var additionalValues = new Dictionary<string, string>();
+                    additionalValues.Add("Invoice ID", invoice.PrefixedInvoiceNumber());
+                    additionalValues.Add("Contact Number", invoice.BillToPhone);
+                    additionalValues.Add("Billing Address Line 1", invoice.BillToAddress1);
+                    additionalValues.Add("Billing Address Line 2", invoice.BillToAddress2);
+                    additionalValues.Add("Billing Town", invoice.BillToLocality);
+                    additionalValues.Add("Billing County", invoice.BillToRegion);
+                    additionalValues.Add("Billing Postcode", invoice.BillToPostalCode);
+
+
                     // Create a Stripe charge
                     var chargeOptions = new StripeChargeCreateOptions
                     {
@@ -165,6 +177,9 @@ namespace Merchello.Providers.Payment.Stripe.Provider
                         Description = "AEHS Store Order",
                         CustomerId = customer.Id,
                         Capture = option == TransactionOption.AuthorizeAndCapture,
+                        ReceiptEmail = email,
+                        Metadata = additionalValues
+
                     };
 
                     var chargeService = new StripeChargeService();

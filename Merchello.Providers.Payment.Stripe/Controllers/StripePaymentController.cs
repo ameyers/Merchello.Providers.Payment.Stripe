@@ -117,7 +117,7 @@ namespace Merchello.Providers.Payment.Stripe.Controllers
             var model = this.CheckoutPaymentModelFactory.Create(CurrentCustomer, paymentMethod);
             model.PublishableKey = settings.PublishableKey;
             model.SuccessRedirectUrl = settings.SuccessRedirectUrl;
-            //model.Name = billing.Name;
+            model.Name = billing.Name;
             model.Email = billing.Email;
 
             return view.IsNullOrWhiteSpace() ? this.PartialView(model) : this.PartialView(view, model);
